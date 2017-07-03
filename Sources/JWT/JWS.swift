@@ -2,6 +2,8 @@ import CryptoSwift
 import Cheetah
 import Foundation
 
+fileprivate let jwsFields = ["typ", "cty", "alg", "jku", "jwk", "kid"]
+
 /// Errors related to JWT
 enum JWTError : Error {
     /// Happens when deserialization isn't possible according to spec
@@ -168,4 +170,16 @@ public struct JSONWebSignature {
     }
 }
 
-fileprivate let jwsFields = ["typ", "cty", "alg", "jku", "jwk", "kid"]
+extension JSONWebSignature.Header {
+    public static func hs256() -> JSONWebSignature.Header {
+        return JSONWebSignature.Header(verifiedBy: .HS256)
+    }
+    
+    public static func hs384() -> JSONWebSignature.Header {
+        return JSONWebSignature.Header(verifiedBy: .HS384)
+    }
+    
+    public static func hs512() -> JSONWebSignature.Header {
+        return JSONWebSignature.Header(verifiedBy: .HS512)
+    }
+}

@@ -12,14 +12,23 @@ class JWTTests: XCTestCase {
         
         let signed = try JSONWebSignature(headers: [JSONWebSignature.Header(verifiedBy: .HS256) ], payload: json, secret: secret).sign()
         
-        print(String(bytes: signed, encoding: .utf8))
-        
         let signature = try JSONWebSignature(from: signed, verifyingWith: secret)
         XCTAssertEqual(json, signature.payload)
+        
+        let message = AuthenticationMessage(token: "donotuseastaticstring")
+        
+        let jws = try JWSEncoder.sign(message, signedBy: secret, using: .hs256())
+        
+        let messageCopy = try JWSDecoder.decode(AuthenticationMessage.self, from: jws, verifying: secret)
+        
+        XCTAssertEqual(message.token, messageCopy.token)
     }
-
 
     static var allTests: [(String, (JWTTests) -> () throws -> Void)] = [
         ("testExample", testExample),
     ]
+}
+
+struct AuthenticationMessage : Codable {
+    var token: String
 }
