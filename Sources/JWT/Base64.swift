@@ -4,10 +4,14 @@ struct InvalidBase64 : Error {}
 
 /// A simple Base64 implmeentation to work around the Foundation bug
 struct Base64 {
+    static func decode(_ string: String) throws -> [UInt8] {
+        return try decode([UInt8](string.utf8))
+    }
+    
     /// Decodes a Base64 encoded String into Data
     ///
     /// - throws: If the string isn't base64 encoded
-    static func decode(_ string: String) throws -> Data {
+    static func decode(_ string: [UInt8]) throws -> [UInt8] {
         let lookupTable: [UInt8] = [
             64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
             64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
@@ -28,51 +32,89 @@ struct Base64 {
             64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
             ]
         
-        var decoded = Data()
-        var unreadBytes = 0
+        let remainder = string.count % 4
+        let length = (string.count - remainder) / 4
         
-        for character in string.utf8 {
-            if lookupTable[Int(character)] > 63 {
-                if character == 61 {
-                    break
-                } else {
-                    throw InvalidBase64()
-                }
-            }
-            
-            unreadBytes += 1
-        }
-        
-        func byte(_ index: Int) -> Int {
-            return Int(Array(string.utf8)[index])
-        }
+        var decoded = [UInt8]()
+        decoded.reserveCapacity(length)
         
         var index = 0
+        var i0: UInt8 = 0
+        var i1: UInt8 = 0
+        var i2: UInt8 = 0
+        var i3: UInt8 = 0
         
-        while unreadBytes > 4 {
-            decoded.append(lookupTable[byte(index + 0)] << 2 | lookupTable[byte(index + 1)] >> 4)
-            decoded.append(lookupTable[byte(index + 1)] << 4 | lookupTable[byte(index + 2)] >> 2)
-            decoded.append(lookupTable[byte(index + 2)] << 6 | lookupTable[byte(index + 3)])
+        while index &+ 4 < string.count {
+            i0 = lookupTable[numericCast(string[index])]
+            i1 = lookupTable[numericCast(string[index &+ 1])]
+            i2 = lookupTable[numericCast(string[index &+ 2])]
+            i3 = lookupTable[numericCast(string[index &+ 3])]
+            
+            if i0 > 63 || i1 > 63 || i2 > 63 || i3 > 63 {
+                throw InvalidBase64()
+            }
+            
+            decoded.append(i0 << 2 | i1 >> 4)
+            decoded.append(i1 << 4 | i2 >> 2)
+            decoded.append(i2 << 6 | i3)
             index += 4
-            unreadBytes -= 4
         }
         
-        if unreadBytes > 1 {
-            decoded.append(lookupTable[byte(index + 0)] << 2 | lookupTable[byte(index + 1)] >> 4)
-        }
-        
-        if unreadBytes > 2 {
-            decoded.append(lookupTable[byte(index + 1)] << 4 | lookupTable[byte(index + 2)] >> 2)
-        }
-        
-        if unreadBytes > 3 {
-            decoded.append(lookupTable[byte(index + 2)] << 6 | lookupTable[byte(index + 3)])
+        if string.count &- index > 1 {
+            i0 = lookupTable[numericCast(string[index])]
+            i1 = lookupTable[numericCast(string[index &+ 1])]
+            
+            if i1 > 63 {
+                guard string[index] == 61 else {
+                    throw InvalidBase64()
+                }
+                
+                return decoded
+            }
+            
+            if i2 > 63 {
+                guard string[index &+ 2] == 61 else {
+                    throw InvalidBase64()
+                }
+                
+                return decoded
+            }
+            
+            decoded.append(i0 << 2 | i1 >> 4)
+            
+            if string.count &- index > 2 {
+                i2 = lookupTable[numericCast(string[index &+ 2])]
+                
+                if i2 > 63 {
+                    guard string[index &+ 2] == 61 else {
+                        throw InvalidBase64()
+                    }
+                    
+                    return decoded
+                }
+                
+                decoded.append(i1 << 4 | i2 >> 2)
+                
+                if string.count &- index > 3 {
+                    i3 = lookupTable[numericCast(string[index &+ 3])]
+                    
+                    if i3 > 63 {
+                        guard string[index &+ 3] == 61 else {
+                            throw InvalidBase64()
+                        }
+                        
+                        return decoded
+                    }
+                    
+                    decoded.append(i2 << 6 | i3)
+                }
+            }
         }
         
         return decoded
     }
     
-    static func encode(_ data: Data) -> String {
+    static func encode(_ data: [UInt8]) -> String {
         let base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
         var encoded: String = ""
         

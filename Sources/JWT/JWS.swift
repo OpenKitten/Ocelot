@@ -111,17 +111,15 @@ struct JSONWebSignature {
     var payload: JSONObject
     var secret: [UInt8]
 
-    func sign(_ header: Header) throws -> String {
+    func sign(_ header: Header) throws -> [UInt8] {
         let headerData = header.serializeProtectedHeader().serialize()
-        let encodedHeader = Base64.encode(Data(headerData))
-        let serializedHeader = [UInt8](encodedHeader.utf8)
-        let encodedPayload =  Base64.encode(Data(payload.serialize()))
-        let serializedPayload = [UInt8](encodedPayload.utf8)
+        let encodedHeader = [UInt8](Base64.encode(headerData).utf8)
+        let encodedPayload =  [UInt8](Base64.encode(payload.serialize()).utf8)
         
-        return encodedHeader + "." + encodedPayload + "." + Base64.encode(Data(try header.alg.sign(serializedHeader + [0x2e] + serializedPayload, with: secret)))
+        return encodedHeader + [0x2e] + encodedPayload + [0x2e] + [UInt8](Base64.encode(try header.alg.sign(encodedHeader + [0x2e] + encodedPayload, with: secret)).utf8)
     }
     
-    func serializeAll() throws -> [String] {
+    func serializeAll() throws -> [[UInt8]] {
         guard headers.count > 0 else {
             throw JWTError.unsupported
         }
@@ -134,19 +132,23 @@ struct JSONWebSignature {
         self.payload = payload
         self.secret = secret
     }
-
+    
     init(from string: String, verifyingWith secret: [UInt8]) throws {
-        let parts = string.split(separator: ".")
+        try self.init(from: [UInt8](string.utf8), verifyingWith: secret)
+    }
+
+    init(from string: [UInt8], verifyingWith secret: [UInt8]) throws {
+        let parts = string.split(separator: 0x2e)
 
         self.secret = secret
 
         switch parts.count {
         case 3:
-            let jsonString = try Base64.decode(String(parts[0]))
-            let payloadString = try Base64.decode(String(parts[1]))
+            let jsonString = try Base64.decode(Array(parts[0]))
+            let payloadString = try Base64.decode(Array(parts[1]))
             
-            let headerObject = try JSONObject(from: Array(jsonString))
-            let payloadObject = try JSONObject(from: Array(payloadString))
+            let headerObject = try JSONObject(from: jsonString)
+            let payloadObject = try JSONObject(from: payloadString)
             
             let header = try Header(headerObject)
             

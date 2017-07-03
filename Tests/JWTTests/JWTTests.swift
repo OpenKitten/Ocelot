@@ -12,9 +12,9 @@ class JWTTests: XCTestCase {
         
         let signed = try JSONWebSignature(headers: [JSONWebSignature.Header(verifiedBy: .HS256) ], payload: json, secret: secret).serializeAll()
         
-        print(signed[0])
+        print(String(bytes: signed.first!, encoding: .utf8))
         
-        let signature = try JSONWebSignature(from: signed[0], verifyingWith: secret)
+        let signature = try JSONWebSignature(from: signed.first!, verifyingWith: secret)
         XCTAssertEqual(json, signature.payload)
     }
 
