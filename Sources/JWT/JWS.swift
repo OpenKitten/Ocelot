@@ -21,20 +21,21 @@ enum JWTError : Error {
     case unsupported
 }
 
+/// JSON Web Signature (signature based JSON Web Token)
 public struct JSONWebSignature {
-    struct JSONWebKey {
-        
-    }
-
+    /// The header of a JSON Web Signature
     public struct Header {
+        /// The algorithm to use for signing
         public enum Algorithm : String {
-            // HMAC SHA256
+            /// HMAC SHA256
             case HS256
+            
+            /// HMAC SHA384
             case HS384
+            
+            /// HMAC SHA512
             case HS512
-
-            case none
-
+            
             internal func sign(_ data: [UInt8], with secret: [UInt8]) throws -> [UInt8] {
                 switch self {
                 case .HS256:
@@ -43,28 +44,36 @@ public struct JSONWebSignature {
                     return try HMAC(key: secret, variant: .sha384).authenticate(data)
                 case .HS512:
                     return try HMAC(key: secret, variant: .sha512).authenticate(data)
-                case .none:
-                    return data
                 }
             }
         }
         
+        /// The hashing algorithm used for verification
         public var alg: Algorithm
+        
+        /// Defines what kind of message described by this header
         public var signatureType: String?
+        
+        /// The type of payload described by this header
         public var payloadType: String?
 
         var jsonWebKeySetURL: String?
-        var jsonWebKey: JSONWebKey?
+//        var jsonWebKey: JSONWebKey?
         var keyID: String?
         
+        /// All fields that *must* be contained and recognized in this header
         var criticalFields = [String]()
+        
+        /// Additional fields
         var additionalFields: JSONObject
         
+        /// Creates a basic header that signs using the provided algorithm
         public init(verifiedBy algorithm: Algorithm) {
             self.alg = algorithm
             self.additionalFields = JSONObject()
         }
-
+        
+        /// Deserializes a header from a JSONObject
         public init(_ object: JSONObject) throws {
             var object = object
 
@@ -108,11 +117,39 @@ public struct JSONWebSignature {
             ]
         }
     }
-
+    
+    /// The headers linked to this message
+    ///
+    /// A Web Token can be signed by multiple headers
+    ///
+    /// Currently we don't support anything other than 1 header
     public var headers: [Header]
+    
+    /// The JSON payload within this message
     public var payload: JSONObject
+    
+    /// The secret that is used by all authorized parties to sign messages
     private var secret: [UInt8]
-
+    
+    /// Signs the message and returns the UTF8 encoded String of this message
+    public func signedString(_ header: Header? = nil) throws -> String {
+        let signed = try sign(header)
+        
+        guard let string = String(bytes: signed, encoding: .utf8) else {
+            throw JWTError.unsupported
+        }
+        
+        return string
+    }
+    
+    /// Signs the message and returns the UTF8 of this message
+    ///
+    /// Can be transformed into a String like so:
+    ///
+    /// ```swift
+    /// let signed = try jws.sign()
+    /// let signedString = String(bytes: signed, encoding: .utf8)
+    /// ```
     public func sign(_ header: Header? = nil) throws -> [UInt8] {
         let usedHeader: Header
         
@@ -133,16 +170,27 @@ public struct JSONWebSignature {
         return encodedHeader + [0x2e] + encodedPayload + [0x2e] + [UInt8](Base64.encode(try usedHeader.alg.sign(encodedHeader + [0x2e] + encodedPayload, with: secret)).utf8)
     }
     
+    /// Creates a new JSON Web Signature from predefined data
     public init(headers: [Header], payload: JSONObject, secret: [UInt8]) {
         self.headers = headers
         self.payload = payload
         self.secret = secret
     }
     
+    /// Parses a JWT String into a JSON Web Signature
+    ///
+    /// Verifies using the provided secret
+    ///
+    /// - throws: When the signature is invalid or the JWT is invalid
     public init(from string: String, verifyingWith secret: [UInt8]) throws {
         try self.init(from: [UInt8](string.utf8), verifyingWith: secret)
     }
-
+    
+    /// Parses a JWT UTF8 String into a JSON Web Signature
+    ///
+    /// Verifies using the provided secret
+    ///
+    /// - throws: When the signature is invalid or the JWT is invalid
     public init(from string: [UInt8], verifyingWith secret: [UInt8]) throws {
         let parts = string.split(separator: 0x2e)
 
@@ -171,14 +219,17 @@ public struct JSONWebSignature {
 }
 
 extension JSONWebSignature.Header {
+    /// Creates a simple HMAC SHA256 header
     public static func hs256() -> JSONWebSignature.Header {
         return JSONWebSignature.Header(verifiedBy: .HS256)
     }
     
+    /// Creates a simple HMAC SHA384 header
     public static func hs384() -> JSONWebSignature.Header {
         return JSONWebSignature.Header(verifiedBy: .HS384)
     }
     
+    /// Creates a simple HMAC SHA512 header
     public static func hs512() -> JSONWebSignature.Header {
         return JSONWebSignature.Header(verifiedBy: .HS512)
     }
