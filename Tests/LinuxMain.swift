@@ -1,6 +1,6 @@
 import XCTest
-@testable import JWTTests
+@testable import OcelotTests
 
 XCTMain([
-    testCase(JWTTests.allTests),
+    testCase(OcelotTests.allTests),
 ])

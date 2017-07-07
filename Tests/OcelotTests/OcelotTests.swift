@@ -1,8 +1,8 @@
 import Cheetah
 import XCTest
-@testable import JWT
+@testable import Ocelot
 
-class JWTTests: XCTestCase {
+class OcelotTests: XCTestCase {
     func testExample() throws {
         let json: JSONObject = [
             "awesome": true
@@ -24,7 +24,7 @@ class JWTTests: XCTestCase {
         XCTAssertEqual(message.token, messageCopy.token)
     }
 
-    static var allTests: [(String, (JWTTests) -> () throws -> Void)] = [
+    static var allTests: [(String, (OcelotTests) -> () throws -> Void)] = [
         ("testExample", testExample),
     ]
 }

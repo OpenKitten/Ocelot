@@ -1,9 +1,23 @@
+// swift-tools-version:4.0
+// The swift-tools-version declares the minimum version of Swift required to build this package.
+
+
 import PackageDescription
 
 let package = Package(
     name: "Ocelot",
     dependencies: [
-    .Package(url: "https://github.com/OpenKitten/Cheetah.git", majorVersion: 1),
-    .Package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", versions: Version(0, 6, 9) ..< Version(0, 7, 0))
+        .package(url: "https://github.com/OpenKitten/Cheetah.git", .revision("swift4")),
+        .package(url: "https://github.com/OpenKitten/CryptoKitten.git", from: Version(0,1,0))
+    ],
+    targets: [
+        // Targets are the basic building blocks of a package. A target can define a module or a test suite.
+        // Targets can depend on other targets in this package, and on products in packages which this package depends on.
+        .target(
+            name: "Ocelot",
+            dependencies: ["Cheetah", "CryptoKitten"]),
+        .testTarget(
+            name: "OcelotTests",
+            dependencies: ["Ocelot"]),
     ]
 )
