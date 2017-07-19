@@ -7,7 +7,7 @@ import PackageDescription
 let package = Package(
     name: "Ocelot",
     dependencies: [
-        .package(url: "https://github.com/OpenKitten/Cheetah.git", .revision("swift4")),
+        .package(url: "https://github.com/OpenKitten/Cheetah.git", .revision("framework")),
         .package(url: "https://github.com/OpenKitten/CryptoKitten.git", from: Version(0,1,0))
     ],
     targets: [
