@@ -13,7 +13,7 @@ let package = Package(
             targets: ["Ocelot"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/OpenKitten/Cheetah.git", .revision("framework")),
+        .package(url: "https://github.com/OpenKitten/Cheetah.git", from: "2.0.0"),
         .package(url: "https://github.com/OpenKitten/CryptoKitten.git", from: Version(0,2,1))
     ],
     targets: [
