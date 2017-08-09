@@ -39,11 +39,11 @@ public struct JSONWebSignature {
             internal func sign(_ data: [UInt8], with secret: [UInt8]) throws -> [UInt8] {
                 switch self {
                 case .HS256:
-                    return HMAC<SHA256>.authenticate(message: data, withKey: secret)
+                    return HMAC<SHA256>.authenticate(data, withKey: secret)
                 case .HS384:
-                    return HMAC<SHA384>.authenticate(message: data, withKey: secret)
+                    return HMAC<SHA384>.authenticate(data, withKey: secret)
                 case .HS512:
-                    return HMAC<SHA512>.authenticate(message: data, withKey: secret)
+                    return HMAC<SHA512>.authenticate(data, withKey: secret)
                 }
             }
         }
